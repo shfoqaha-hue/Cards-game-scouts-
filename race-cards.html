@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>سباق الكروت</title>
+<style>
+:root{--bg:#f3efe6;--surface:#fffdf8;--ink:#1d2a33;--muted:#5d6b73;--line:#d9d2c3;--card:#1f5f66;--card-ink:#fff;
+--p1:#d9363e;--p2:#2563c9;--p3:#e0a100;--p4:#1c8a4f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14201f;--surface:#1c2c2b;--ink:#f0ece2;--muted:#a3b1ad;--line:#33494a;--card:#2a8a92;--card-ink:#fff}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Tajawal","Segoe UI",Tahoma,sans-serif;line-height:1.6;padding:14px;max-width:760px;margin:0 auto}
+h1{font-size:1.6rem;margin:4px 0 10px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+button{font:inherit;cursor:pointer}
+.btn{background:var(--surface);color:var(--ink);border:2px solid var(--line);border-radius:10px;padding:6px 14px}
+.btn.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn:focus-visible,.card:focus-visible{outline:3px solid var(--p3);outline-offset:2px}
+#status{background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:12px}
+.names{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
+.names input{font:inherit;width:100%;padding:6px 10px;border-radius:10px;border:2px solid var(--line);background:var(--surface);color:var(--ink)}
+#status b{display:inline-block;padding:0 10px;border-radius:8px;color:#fff}
+#log{color:var(--muted);font-size:.95rem;min-height:1.5em}
+#swap{display:none;position:fixed;inset:auto 0 0 0;z-index:20;gap:10px;flex-wrap:wrap;justify-content:center;padding:16px 14px calc(16px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:4px solid var(--p3);box-shadow:0 -6px 20px rgba(0,0,0,.3)}
+#swap .msg{width:100%;text-align:center;font-weight:700;font-size:1.1rem}
+#swap .btn{font-size:1.1rem;padding:10px 18px;border-width:3px}
+.lane{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.name{width:74px;font-weight:700;font-size:.9rem;flex:none}
+.track{position:relative;flex:1;height:38px;display:grid;grid-template-columns:repeat(11,1fr);border:2px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden}
+.track i{border-inline-start:1px dashed var(--line)}
+.track i:first-child{border:0;background:rgba(127,127,127,.12)}
+.track i:last-child{background:repeating-conic-gradient(var(--ink) 0 25%,var(--surface) 0 50%) 0 0/12px 12px}
+.tok{position:absolute;top:3px;width:calc(100%/11);height:32px;display:flex;justify-content:center;transition:right .6s ease}
+.tok span{width:30px;height:30px;border-radius:50%;border:3px solid #fff;color:#fff;font-weight:700;display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.lane.turn .name{text-decoration:underline;text-decoration-thickness:3px}
+#grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:14px}
+.card{aspect-ratio:3/4;border:0;border-radius:12px;background:var(--card);color:var(--card-ink);font-size:1.5rem;font-weight:700;display:grid;place-items:center;padding:2px;transition:transform .2s}
+.card:not(:disabled):hover{transform:translateY(-3px)}
+.card.open{background:var(--surface);color:var(--ink);border:2px solid var(--line);font-size:.8rem;line-height:1.3;text-align:center}
+.card.open.good{border-color:var(--p4)}.card.open.bad{border-color:var(--p1)}.card.open.neutral{border-color:var(--p3)}
+.card:disabled{cursor:default}
+#win{display:none;position:fixed;inset:0;z-index:30;background:rgba(10,20,20,.85);flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:20px;overflow:hidden;color:#fff}
+.trophy{font-size:6rem;animation:pop 1s ease infinite alternate}
+@keyframes pop{from{transform:scale(1) rotate(-8deg)}to{transform:scale(1.25) rotate(8deg)}}
+.wt{font-size:1.4rem}
+.wn{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.wn span{font-size:clamp(2.2rem,11vw,4.5rem);font-weight:800;padding:4px 26px;border-radius:18px;text-shadow:0 2px 4px rgba(0,0,0,.5);animation:glow 1s ease infinite alternate}
+@keyframes glow{from{transform:scale(1)}to{transform:scale(1.08)}}
+.wb{display:flex;gap:10px;position:relative;z-index:1}
+.wb .btn{font-size:1.1rem;padding:10px 20px}
+.confetti{position:absolute;top:-20px;width:10px;height:16px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+@media (prefers-reduced-motion:reduce){.tok,.card{transition:none}.trophy,.wn span{animation:none}.confetti{display:none}}
+</style>
+</head>
+<body>
+<h1>سباق الكروت</h1>
+<div class="bar">
+  <button class="btn on" id="mManual">يدوي: أنا بختار الكرت</button>
+  <button class="btn" id="mAuto">تلقائي</button>
+  <button class="btn" id="restart">لعبة جديدة</button>
+</div>
+<div class="names" id="names"></div>
+<div id="status"><div id="turn"></div><div id="log"></div><div id="swap"></div></div>
+<div id="lanes"></div>
+<div id="grid"></div>
+
+<div id="win"></div>
+<script>
+const GOAL = 10;
+const PLAYERS = [
+  {name:"الفريق 1", color:"var(--p1)"},
+  {name:"الفريق 2", color:"var(--p2)"},
+  {name:"الفريق 3", color:"var(--p3)"},
+  {name:"الفريق 4", color:"var(--p4)"}
+];
+// توزيع الكروت العشرين: غيّر الأرقام هون لتغيّر اللعبة
+const ACTIONS = [
+  {k:"f",v:4},{k:"f",v:4},
+  {k:"f",v:3},{k:"f",v:3},
+  {k:"f",v:2},{k:"f",v:2},
+  {k:"f",v:1},{k:"f",v:1},
+  {k:"b",v:2},{k:"b",v:2},{k:"b",v:2},
+  {k:"b",v:1},{k:"b",v:1},{k:"b",v:1},
+  {k:"s"},{k:"s"},
+  {k:"w"},{k:"w"},
+  {k:"a",v:2},{k:"a",v:2}
+];
+let pool, pos, turn, deck, used, busy, over, mode = "manual", timer;
+const $ = id => document.getElementById(id);
+
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function label(a){
+  if(a.k==="f") return {t:"تقدّم "+a.v+(a.v>2?" خطوات":a.v===2?" خطوتين":" خطوة"),c:"good"};
+  if(a.k==="b") return {t:"ارجع "+(a.v===2?"خطوتين":"خطوة"),c:"bad"};
+  if(a.k==="a") return {t:"⚔️ هجوم: ارجّع فريق "+a.v+" خطوات",c:"good"};
+  if(a.k==="s") return {t:"خليك مكانك",c:"neutral"};
+  return {t:"بدّل مكانك مع لاعب",c:"neutral"};
+}
+function newDeck(){deck=shuffle(ACTIONS);pool=[...deck];used=new Set();buildGrid()}
+function buildGrid(){
+  const g=$("grid");g.innerHTML="";
+  deck.forEach((a,i)=>{
+    const b=document.createElement("button");
+    b.className="card";b.textContent=i+1;b.id="c"+i;
+    b.setAttribute("aria-label","كرت رقم "+(i+1));
+    b.onclick=()=>pick(i,false);
+    g.appendChild(b);
+  });
+}
+function buildLanes(){
+  const L=$("lanes");L.innerHTML="";
+  PLAYERS.forEach((p,i)=>{
+    L.insertAdjacentHTML("beforeend",
+      `<div class="lane" id="lane${i}"><div class="name" style="color:${p.color}">${p.name}</div>
+       <div class="track">${"<i></i>".repeat(11)}<div class="tok" id="tok${i}"><span style="background:${p.color}">${i+1}</span></div></div></div>`);
+  });
+}
+function render(){
+  PLAYERS.forEach((p,i)=>{
+    $("tok"+i).style.right=(pos[i]*100/11)+"%";
+    $("lane"+i).classList.toggle("turn",i===turn&&!over);
+  });
+}
+function setTurnText(){
+  const p=PLAYERS[turn];
+  $("turn").innerHTML=over?"":`الدور على <b style="background:${p.color}">${p.name}</b> — ${mode==="auto"?"اللعب تلقائي":"اختر كرت"} (باقي ${deck.length-used.size} كرت)`;
+}
+function start(){
+  clearTimeout(timer);
+  pos=[0,0,0,0];turn=0;busy=false;over=false;
+  $("log").textContent="";$("swap").style.display="none";$("win").style.display="none";
+  newDeck();buildLanes();render();setTurnText();maybeAuto();
+}
+function maybeAuto(){
+  clearTimeout(timer);
+  if(mode!=="auto"||busy||over)return;
+  timer=setTimeout(()=>{
+    const free=deck.map((_,i)=>i).filter(i=>!used.has(i));
+    pick(free[Math.floor(Math.random()*free.length)],true);
+  },1000);
+}
+function pick(i,fromAuto){
+  if(busy||over||used.has(i))return;
+  if(mode==="auto"&&!fromAuto)return;
+  busy=true;clearTimeout(timer);used.add(i);
+  const SPECIAL=["s","w","a"];
+  const ok=pool.map((x,j)=>j).filter(j=>used.size>8||!SPECIAL.includes(pool[j].k));
+  const a=pool.splice(ok[Math.floor(Math.random()*ok.length)],1)[0];
+  const l=label(a),el=$("c"+i);
+  el.classList.add("open",l.c);el.textContent=l.t;el.disabled=true;
+  setTimeout(()=>apply(a),500);
+}
+function apply(a){
+  const p=PLAYERS[turn].name;
+  if(a.k==="f"){pos[turn]=Math.min(GOAL,pos[turn]+a.v);log(p+" تقدّم "+a.v)}
+  else if(a.k==="b"){pos[turn]=Math.max(0,pos[turn]-a.v);log(p+" رجع "+a.v)}
+  else if(a.k==="s"){log(p+" بقي مكانه")}
+  else if(a.k==="a"){
+    const ot=PLAYERS.map((_,i)=>i).filter(i=>i!==turn);
+    if(mode==="auto"){doAttack(ot[Math.floor(Math.random()*ot.length)],a.v);return}
+    chooseTarget("اختر الفريق اللي بدك ترجّعه "+a.v+" خطوات:",ot,j=>doAttack(j,a.v));
+    return;
+  }
+  else{
+    const others=PLAYERS.map((_,i)=>i).filter(i=>i!==turn);
+    if(mode==="auto"){doSwap(others[Math.floor(Math.random()*others.length)]);return}
+    const box=$("swap");box.innerHTML='<div class="msg">اختر الفريق اللي بدك تبدّل معه:</div>';box.style.display="flex";
+    others.forEach(i=>{
+      const b=document.createElement("button");b.className="btn";
+      b.style.borderColor=PLAYERS[i].color;b.textContent=PLAYERS[i].name;
+      b.onclick=()=>{box.style.display="none";doSwap(i)};
+      box.appendChild(b);
+    });
+    return;
+  }
+  finish();
+}
+function celebrate(ids,title){
+  setTimeout(()=>{
+    if(!over)return;
+    const w=$("win");
+    w.innerHTML='<div class="trophy">🏆</div><div class="wt"></div><div class="wn"></div><div class="wb"></div>';
+    w.querySelector(".wt").textContent=title;
+    const wn=w.querySelector(".wn");
+    ids.forEach(i=>{const s=document.createElement("span");s.textContent=PLAYERS[i].name;s.style.background=PLAYERS[i].color;wn.appendChild(s)});
+    const wb=w.querySelector(".wb");
+    const b1=document.createElement("button");b1.className="btn on";b1.textContent="لعبة جديدة";b1.onclick=start;
+    const b2=document.createElement("button");b2.className="btn";b2.textContent="إغلاق";b2.onclick=()=>{w.style.display="none"};
+    wb.append(b1,b2);
+    for(let k=0;k<50;k++){
+      const c=document.createElement("span");c.className="confetti";
+      c.style.left=Math.random()*100+"%";
+      c.style.background=PLAYERS[k%4].color;
+      c.style.animationDuration=(2+Math.random()*2.5)+"s";
+      c.style.animationDelay=(Math.random()*1.5)+"s";
+      w.appendChild(c);
+    }
+    w.style.display="flex";
+  },900);
+}
+function chooseTarget(msg,ids,fn){
+  const box=$("swap");box.innerHTML='<div class="msg"></div>';box.firstChild.textContent=msg;box.style.display="flex";
+  ids.forEach(i=>{
+    const b=document.createElement("button");b.className="btn";
+    b.style.borderColor=PLAYERS[i].color;b.textContent=PLAYERS[i].name;
+    b.onclick=()=>{box.style.display="none";fn(i)};
+    box.appendChild(b);
+  });
+}
+function doAttack(j,v){
+  pos[j]=Math.max(0,pos[j]-v);
+  log(PLAYERS[turn].name+" هاجم "+PLAYERS[j].name+" ورجّعه "+v+" خطوات");
+  finish();
+}
+function buildNames(){
+  const n=$("names");
+  PLAYERS.forEach((p,i)=>{
+    const inp=document.createElement("input");
+    inp.value=p.name;inp.maxLength=20;
+    inp.style.borderColor=p.color;
+    inp.setAttribute("aria-label","اسم الفريق "+(i+1));
+    inp.oninput=()=>{
+      p.name=inp.value.trim()||("الفريق "+(i+1));
+      $("lane"+i).querySelector(".name").textContent=p.name;
+      if(!over)setTurnText();
+    };
+    n.appendChild(inp);
+  });
+}
+function doSwap(j){
+  [pos[turn],pos[j]]=[pos[j],pos[turn]];
+  log(PLAYERS[turn].name+" بدّل مكانه مع "+PLAYERS[j].name);
+  finish();
+}
+function log(t){$("log").textContent=t}
+function finish(){
+  render();
+  const w=pos.findIndex(x=>x>=GOAL);
+  if(w>=0){
+    over=true;celebrate([w],"الفائز");
+    $("turn").innerHTML=`🏆 الفائز: <b style="background:${PLAYERS[w].color}">${PLAYERS[w].name}</b>`;
+    render();return;
+  }
+  setTimeout(()=>{
+    if(used.size===deck.length){
+      over=true;
+      const m=Math.max(...pos),ws=pos.map((x,i)=>i).filter(i=>pos[i]===m);
+      celebrate(ws,ws.length>1?"تعادل بالأبعد":"الفائز الأبعد");
+      $("turn").innerHTML="🏁 خلصت الكروت — "+(ws.length>1?"تعادل بين ":"الفائز الأبعد: ")+ws.map(i=>`<b style="background:${PLAYERS[i].color}">${PLAYERS[i].name}</b>`).join(" ");
+      render();return;
+    }
+    turn=(turn+1)%PLAYERS.length;
+    busy=false;render();setTurnText();maybeAuto();
+  },700);
+}
+function setMode(m){
+  mode=m;
+  $("mManual").classList.toggle("on",m==="manual");
+  $("mAuto").classList.toggle("on",m==="auto");
+  if(!over)setTurnText();
+  maybeAuto();
+}
+$("mManual").onclick=()=>setMode("manual");
+$("mAuto").onclick=()=>setMode("auto");
+$("restart").onclick=start;
+buildNames();
+start();
+</script>
+</body>
+</html>
